@@ -1,0 +1,327 @@
+= Building a microservice with webhooks (Blinkist)
+Benjamin b.james.neustadt@gmail.com
+:author: Benjamin
+:copyright: (C) 2022 {author}
+:doctype: book
+:experimental:
+:header_footer: true
+:icons: font
+:sectnums:
+:sourcedir: assets
+:toc: left
+:source-highlighter: highlight.js
+:highlightjsdir: ./highlight
+//URLs
+:url-difference-webhook-websocket: https://stackoverflow.com/a/24747947
+:url-websockets: https://www.theodinproject.com/lessons/ruby-on-rails-websockets-and-actioncable
+:url-cookies-vs-storage: https://www.developer.com/guides/web-storage-api-vs-cookies-for-browser-data-storage/
+:url-sinatra-testing-webhook-ngrok: https://sendgrid.com/blog/simple-webhook-testing-using-sinatra-ngrok/
+
+== How you approach such a task in general
+
+.As I have never used a webhook before I am researching how it actually works.
+
+====
+My understanding so far is that a webhook is an API in reverse.
+
+An API exposes data on an endpoint;
+A webhook "informs" an endpoint of certain data
+
+A webhook is similar to a websocket, they both attempt to solve the same problem,
+continuous polling issue.
+Resource:
+- {url-difference-webhook-websocket}[in stackoverflow answer]
+- {url-websockets}[Odin project]
+
+A webhook is for server to server
+
+A webhook is not a protocol, while a websocket is.
+
+A websocket is client to server
+
+The continuous polling issue:
+
+As a user I want to know when there has been an update on github, when someone has updated their profile with a new commit for instance.
+So We can query the API, exposing the data of the profile.
+I know they will update at least once today, so I query the endpoint every minute in the hour.
+I make 60 queries, and I then notice the difference.
+I can do a diff on each return of data to see what the difference is.
+
+This would work, though it would be considered expensive (effort wise), we would be using resources that we do not need to use.
+
+So instead of this, we can say to the server: "here is a URL, where you can POST to when a change occurs on your server, send an event webhook to me"
+
+====
+
+As we are working towards an MVP, I am first going to use a Sinatra framework, as it is super light weight,
+and as it is slightly more low level than Rails, if I encounter any problems I then be able to trouble shoot easily.
+When I have everything running, the tests written, and I am able to consume a payload, and then expose it on another endpoint,
+I will switch it to Rails.
+
+By endpoint we mean route.
+A webhook is therefor a POST route,
+we can then havea GET route to expose the endpoint.
+
+We will need to have three endpoints,
+2 for consuming two different types of payload,
+one for exposing the payload
+
+in terms of storing the payload data, there are a few ways we can go about doing this:
+one way is to simply keep the data in a folder on the server,
+another way would be to store the data on a database,
+as we currently know what attributes are stored on each type of payload, we can make a few different databases,
+
+as this may be considered senstive data it may be a safer option to use a POSTGRESQL database,
+or we could use mongodb.
+
+Which database would be best to use?
+We could postpone this for a moment,
+and simply refer to the ORM.
+We can use Activerecord as the ORM,
+it is good because it is available for Sinatra.
+We are using Sinatra because it is lightweight,
+we are using Sinatra because it is a micro framework.
+
+We could use Rails immediately,
+the reason for not using Rails currently is that this is an MVP.
+We can quite easily replace the Sinatra framework for the Rails one after.
+
+They did specify in the brief that once live it will accept all updates from the Blinklist site.
+Since they have 10 million users this could a great deal, and Sinatra will not be able to deal with this.
+
+So the better option would be use Rails.
+
+So what we will do is use Sinatra to build a toy version.
+Then we will use Rails, to build the real MVP.
+
+First task will be to allow a service to receive a payload and display it.
+We can use an array to store the payload temporarily,
+Once we achieve this, then we will choose a database and ORM.
+
+== On what criteria you base your decisions
+
+The decision to use sinatra for a toy version of the micro service
+after this has been built we can use Rails to scale up.
+provided everything is ok in sinatra it should be fine to transfer,
+the only difference I can think of just yet is that Rails does not come packaged with 'http' whereas Sinatra does.
+
+== How you architect such projects
+
+.Examples
+
+### Direct visit
+
+```
+{
+  fingerprint: "b998efcb-1af3-4149-9b56-34c4482f6606",
+  user_id: null,
+  url: "https://www.blinkist.com/en",
+  referrer_url: null,
+  created_at: "2023-01-20 13:59:56.437947 UTC"
+}
+```
+
+### Google Search
+
+```
+{
+  fingerprint: "b998efcb-1af3-4149-9b56-34c4482f6606",
+  user_id: null,
+  url: "https://www.blinkist.com/en/books/lives-of-the-stoics-en",
+  referrer_url: "https://www.google.de/",
+  created_at: "2023-01-20 13:59:56.437947 UTC"
+}
+```
+
+### Facebook Ad
+
+```
+{
+  fingerprint: "b998efcb-1af3-4149-9b56-34c4482f6606",
+  user_id: null,
+  url: "https://www.blinkist.com/en/landing-pages/meet-blinkist?utm_source=facebook&utm_campaign=202301_US_NY_Resolutions&utm_medium=paid&utm_content=19284192381935",
+  referrer_url: "https://www.facebook.com/",
+  created_at: "2023-01-20 14:02:21.16808 UTC"
+}
+```
+The link routes to blinkist but it carries the history of where it came from, or where the link is actually living.
+
+### A visitor with Blinkist account
+
+```
+{
+  fingerprint: "b998efcb-1af3-4149-9b56-34c4482f6606",
+  user_id: "6666bd053866341d6ad30000",
+  url: "https://www.blinkist.com/en/library",
+  referrer_url: null,
+  created_at: "2023-01-18 12:33:41.127641 UTC"
+}
+```
+
+           +---------------------------+
+           |      **MICRO-SERVICE**    |                                                 +-------------------------+
+           |            _SERVER_       |                                                 |                         |
+           |                           |                                                 |   **BLINKIST site**     |
+           |     webhook               |                                                 |                         |
+           |                           |                                                 |   2 types of webhooks:  |
+           |    receives data payload  |                                                 |                         |
+           |                           |                                                 |                         |
+           |    stores data payload    |                                                 |   1  pageview           |
+           |                           |                                                 |                         |
+           |    exposes data payload   |                                                 |   2  event:             |
+           |                           |                                                 |     - signup            |
+           |                           |                                                 |     - starting trial    |
+           |                           |                                                 |     - etc.              |
+           |                           |                                                 |                         |
+           |                           |                                                 |                         |
+           |                           |                                                 +-------------------------+
+           +---------------------------+
+                                                          PAGEVIEW  WEBHOOKS
+
+                                                      +---------------------------+
+                                                      |    Blinkist site          |
+    Create a URL that allows POST                     |                           |     <===== Do they get given the webhook?
+                                                      |                           |
+                                                      +---------------------------+
+                                                      +---------------------------+
+                                                      |     Google site           |
+                                                      |                           |
+                                                      |                           |
+                                                      +---------------------------+
+                                                      +---------------------------+
+                                                      |      FACEBOOK             |
+                                                      |                           |
+                                                      |                           |
+                                                      +---------------------------+
+
+
+
+
+
+
+
+== Further resources
+{url-cookies-vs-storage}[dofference between cookies and storage]
+{url-sinatra-testing-webhook-ngrok}
+
+
+== Notes
+
+.Example webhook based on log file
+[source, rb]
+----
+# webhook to log referral to this page from facebook
+# and redirect to the facebook page
+
+require 'sinatra'
+require 'json'
+require 'logger'
+
+# set up logger
+log = Logger.new('webhook.log')
+log.level = Logger::INFO
+
+# set up facebook page
+fb_page = 'https://www.facebook.com/yourpage'
+
+# set up webhook
+get '/webhook' do
+  log.info "webhook called"
+  log.info params
+  log.info params['hub.challenge']
+  params['hub.challenge']
+end
+
+# set up redirect
+get '/redirect' do
+  log.info "redirect called"
+  log.info params
+  log.info params['ref']
+  redirect fb_page + '?ref=' + params['ref']
+end
+
+# set up default
+get '/' do
+  log.info "default called"
+  log.info params
+  redirect fb_page
+end
+
+# set up default
+get '/*' do
+  log.info "default called"
+  log.info params
+  redirect fb_page
+end
+
+# set up default
+post '/' do
+  log.info "default called"
+  log.info params
+  redirect fb_page
+end
+
+# set up default
+post '/*' do
+  log.info "default called"
+  log.info params
+  redirect fb_page
+end
+
+# set up default
+put '/' do
+  log.info "default called"
+  log.info params
+  redirect fb_page
+end
+
+# set up default
+put '/*' do
+  log.info "default called"
+  log.info params
+  redirect fb_page
+end
+
+# set up default
+delete '/' do
+  log.info "default called"
+  log.info params
+  redirect fb_page
+end
+
+# set up default
+delete '/*' do
+  log.info "default called"
+  log.info params
+  redirect fb_page
+end
+
+# set up default
+options '/' do
+  log.info "default called"
+  log.info params
+  redirect fb_page
+end
+
+# set up default
+options '/*' do
+  log.info "default called"
+  log.info params
+  redirect fb_page
+end
+
+# set up default
+head '/' do
+  log.info "default called"
+  log.info params
+  redirect fb_page
+end
+
+# set up default
+head '/*' do
+  log.info "default called"
+  log.info params
+  redirect fb_page
+end
+
+----
