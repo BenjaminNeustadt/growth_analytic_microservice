@@ -5,8 +5,10 @@ require 'sinatra/activerecord'
 
 set :database, {adapter: "sqlite3", database: "webhook-app.sqlite3"}
 
-class WebhookApp < Sinatra::Base
+class PageView < ActiveRecord::Base
+end
 
+class WebhookApp < Sinatra::Base
 
   configure :development do
     register Sinatra::Reloader
