@@ -6,6 +6,8 @@ ruby '3.0.0'
 
 gem 'sinatra'
 
+gem 'sinatra-contrib'
+
 gem 'webrick'
 
 gem 'rackup'
