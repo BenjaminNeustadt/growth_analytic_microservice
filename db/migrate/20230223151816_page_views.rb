@@ -1,7 +1,6 @@
-class Pageviews < ActiveRecord::Migration[7.0]
-
+class PageViews < ActiveRecord::Migration[7.0]
   def change
-    create_table :page_view do |t|
+    create_table :views do |t|
       t.string :fingerprint
       t.string :user_id
       t.string :url
@@ -9,5 +8,4 @@ class Pageviews < ActiveRecord::Migration[7.0]
       t.string :created_at
     end
   end
-
 end
