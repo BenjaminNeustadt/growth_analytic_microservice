@@ -309,8 +309,8 @@ options '/*' do
   log.info params
   redirect fb_page
 end
-
 # set up default
+
 head '/' do
   log.info "default called"
   log.info params
@@ -324,5 +324,135 @@ head '/*' do
   redirect fb_page
 end
 
+----
+
 # Read the `File` documentation and the `IO` class documentation.
+
+== Diagram Planning
+
+
+                              |-------------------------------+                            +-----------------------+
+                              |                               |                            |                       |
+                              |        CLIENT                 |                   🔎       |   _FACEBOOK AD_       |          POST                     +----------------------+
+                              |                               | -------------------------> |                       | ----------------------------->    |      🕸️ 🕸️ 🕸️        |
+                              |           👨💻                |                            |                       |                                   |                      | -------------------------------->     CALLS THE EVENT AND DROPS OFF THE PAYLOAD
+                              |                               |                            |                       |                                   |    **WEBHOOK**       |                       ++-----------------------------------------------------------++
+                              |-------------------------------+ ---------------+           |                       |                                   |                      |                       || PAYLOAD =                                                 ||
+                                                                               |           +-----------------------+                                   |    2 entry points    |                       || {                                                         ||
+                                          |                                    |           +-----------------------+                                   |                      |                       ||    fingerprint: "b998efcb-1af3-4149-9b56-34c4482f6606",   ||
+                                          |                                    |           |                       |                                   |    1 endpoint        |                       ||    user_id: null,                                         ||
+                                          |  If user clicks directly           |    🔎     |    _GOOGLE AD_        |------------------------------>    |    exposing data     |                       ||    url: "https://www.blinkist.com/en",                    ||
+                                          |  It first reroutes to webhook      +-------->  |                       |                                   |    to be consumed    |                       ||    referrer_url: null,                                    ||
+                                          |  to give the data                              |                       |                                   |    by other micro-   |                       ||    created_at: "2023-01-20 13:59:56.437947 UTC"           ||
+                                          ▽                                                |                       |                                   |    service           |                       ||  }                                                        ||
+                              +-------------------------------|                            +-----------------------+                                   |        =             |                       ||                                                           ||
+                              |                               |                            On some websites you can attach a webhook                   |       API            |                       ||                                                           ||
+                              |        BLINKIST               |                            to an ad, which helps you tally views                       |                      |                       ||  The data is passed somewhere (i.e. a database)           ||
+                              |                               |                     🔎                                                                 |    (REDIRECT/POST)   |                       ||  in our case using an ORM, some operations can be performed|
+                              |        📖                     | ------------------------------------------------------------------------------------>  |                      |                       ||  immediately to leverage the power of database calc       ||
+                              |                               |  <-------------------------------------------------------------------------------------+----------------------+                       ||                                                           ||
+                              |                               |                                                                                                   |                                   ++-----------------------------------------------------------++
+                              |                               |                                                                                                   |
+                              +-------------------------------+                                                                                        +----------+----------+                          NOTE: the benefit of a microservice is that it can do ONE small and well defined thing operation
+                                                                                                                                                       |                     |                                Therefore, the API endpoint that exposes the data should not do any more than it absolutely needs to.
+                                                                                                                                                       | 3rd ENDPOINT API    |                                That will be the role of other services. This service will only store and provide for later user the valuable data.
+                                                                                                                                               +---------------------------------------------+----------------+   This is one step in the factory. Just process. It's the netry point for the data, that's it.
+                                                                                                                                               |                                                              |
+                                                                                                                                               |  {response: status ok,                                       |
+                                                                                                                                               |    users: {                                                  |
+                                                                                                                                               |    id:                                                       |
+                                                                                                                                               |    attributions:                                             |
+                                                                                                                                               |    users: {                                                  |
+                                                                                                                                               |       user_1: {                                              |
+                                                                                                                                               |         fingerprint:                                         |
+                                                                                                                                               |         url:                                                 |
+                                                                                                                                               |         url_referrer:                                        |
+                                                                                                                                               |         created_at:                                          |
+                                                                                                                                               |       }                                                      |
+                                                                                                                                               |   conversion_events: some stuff,                             |
+                                                                                                                                               ||   ROI_of_campaigns: some calculation of                     |
+                                                                                                                                               |                      campaign price vs how many new signups  |
+                                                                                                                                               |   [...]                                                      |
+                                                                                                                                               |                                                              |
+                                                                                                                                               |                                                              |
+                                                                                                                                               |                                                              |
+                                                                                                                                               |                                                              |
+                                                                                                                                               |                                                              |
+                                                                                                                                               |                                                              |
+                                                                                                                                               | }             (DRAFT)                                        |
+                                                                                                                                               +---------------------------------------------+----------------+
+
+                                                                                                                                                        ^             ^           ^            ^
+                                                                                                                                                        |             |           |            |
+                                                                                                                                                        |             |           |            |
+                                                                                                                                                        |             |           |            |
+                                                                                                                                                        |             |           |            |
+                                                                                                                                                        |             |           |            |
+                                                                                                                                                        |             |           |            |
+                                                                                                                                                        |             |           |            |
+                                                                                                                                                        |             |           |            |
+                                                                                                                                                        |             |           |            |
+
+                                                                                                                                                         OTHER MICROSERVICES THAT CAN PERFORM BUSINESS LOGIC ON THE STORED DATA,
+                                                                                                                                                         AFTER CONSUMING IT
+
+                                                                                                                                                         EXAMPLES:
+                                                                                                                                                         - REPORTING CONVERSION EVENTS
+                                                                                                                                                         - CALCULATING ROI OF CAMPAIGNS
+                                                                                                                                                         - MAKE CAMPAIGN BIDDING DECISIONS
+
+
+
+
+
+ == Notes on API design
+
+[source, txt]
+----
+ As much info is available as possible
+
+ Real-time
+     JSON return
+     Must be fast
+     Multiple different query points
+
+
+ Reporting conversion events (USER)
+         User focused
+         Time/date range
+
+         WHERE did they come from, when + insights
+             WHERE
+             when
+                 HOW LONG AGO
+             How many pages viewed before conversion + after conversion
+
+
+ Calculate ROI (Source + Campaign) ?include=users
+         viewed
+         signedup
+         took (average, fasted, longest)
+         How many pages viewed before conversion + after conversion (averages)
+
+         optionally include all user ids
+
+
+ Campaign Bidding Decisions (SOURCE)
+         FOR EACH SOURCE
+             volume (how many)
+             signedup
+             took (average, fasted, longest)
+             How many pages viewed before conversion + after conversion (averages)
+
+
+
+ New signup from campaign 3
+                 Read count = 123
+                     count + 1 = 124
+                     save
+ New signup from campaign 3
+                 Read count = 123
+                     count + 1 = 124
+                     save
+
 ----
