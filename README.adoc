@@ -324,4 +324,5 @@ head '/*' do
   redirect fb_page
 end
 
+# Read the `File` documentation and the `IO` class documentation.
 ----

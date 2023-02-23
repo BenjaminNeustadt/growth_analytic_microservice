@@ -1,11 +1,14 @@
-require 'sinatra/base'
+require 'sinatra'
 require 'sinatra/reloader'
+require 'sinatra/activerecord'
 
 class WebhookApp < Sinatra::Base
 
   configure :development do
     register Sinatra::Reloader
   end
+
+  set :database, {adapter: 'sqlite3', database: 'webhook-app.sqlite3'}
 
   get '/' do
     info = File.read("events.json")

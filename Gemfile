@@ -9,3 +9,10 @@ gem 'sinatra'
 gem 'webrick'
 
 gem 'rackup'
+
+gem 'rake'
+
+gem 'sinatra-activerecord'
+
+gem 'sqlite3'
+
