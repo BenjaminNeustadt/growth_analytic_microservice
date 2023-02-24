@@ -8,15 +8,39 @@ require 'json'
 require_relative './lib/helper_modules/data_formatters'
 require_relative './lib/payload'
 
+module WebHookMessages
+
+  STATUS = { 
+    true => [200, :valid],
+    false => [400, :invalid],
+  }
+
+  MESSAGE = {
+    valid: 'Webhook data stored successfully',
+    invalid: 'Error: invalid event data',
+    invalid_payload: 'Error: invalid JSON payload',
+    absent_data: {message: "No data available"}.to_json
+  }
+
+  def web_response(code, message)
+    status code 
+    MESSAGE[message]
+  end
+
+
+end
 
 set :database, {adapter: "sqlite3", database: "eventwebhook.sqlite3"}
 
 # this is now a proper model
 class Event < ActiveRecord::Base
+
+  include WebHookMessages
+
   self.table_name = 'events'
   
   def self.memory
-    all
+    all.tap { |a| a.empty? and return MESSAGE[:absent_data] }
   end
 
   def self.trials_count
@@ -55,36 +79,30 @@ end
 
 class EventWebhookApp < Sinatra::Base
 
+  include WebHookMessages
+
   configure :development do
     register Sinatra::Reloader
   end
 
   post '/event' do
-    begin
-
-      payload = Payload.new(JSON.parse(request.body.read))
+      payload = Payload.new(request.body.read)
       data = Event.create(payload.process)
-      data.valid? ? (status 200 ; 'Webhook data stored successfully') : (status 400 ; 'Error: invalid event data')
 
-    rescue JSON::ParserError => e
-      status 400
-      'Error: invalid JSON payload'
-    end
+      web_response(*STATUS[data.valid?])
+
+  rescue JSON::ParserError => e
+
+      web_response(400, :invalid_payload)
 
   end
 
   get '/' do
 
     response['Content-Type'] = 'application/json'
+    result_data = JSON.parse(Event.actions_and_records)
 
-    events      = Event.memory
-    result_data = Event.actions_and_records
-
-    if events.empty?
-      { message: "No data available" }.to_json
-    else
-      JSON.pretty_generate(JSON.parse(result_data))
-    end
+    JSON.pretty_generate result_data 
 
   end
 

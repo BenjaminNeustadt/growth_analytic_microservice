@@ -5,7 +5,7 @@ class Payload
   private
  
   def initialize(data)
-    @data = data
+    @data = JSON.parse(data)
   end
  
   public
