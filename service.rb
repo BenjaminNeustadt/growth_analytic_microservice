@@ -5,77 +5,8 @@ require 'sinatra/activerecord'
 require 'sinatra/contrib'
 require 'sinatra/json'
 require 'json'
-
-module Attributions
-
-  def data
-    @data
-  end
-
-  def fingerprint
-  data['fingerprint']
-  end
-
-  def user_id
-    data['user_id']
-  end
-
-  def url
-    data['url']
-  end
-
-  def referrer_url
-    data['referrer_url']
-  end
-
-  def created_at
-    data['created_at']
-  end
-
-  def name
-    data['name']
-  end
-
-end
-
-class Payload
- 
- include Attributions
- 
-  private
- 
-  def initialize(data)
-    @data = data
-  end
- 
-  public
- 
-  attr_reader :data
- 
-  def process
-   data.key?("name") ? process_event : process_view
-  end
-
-  def process_view
-    {
-      fingerprint:    fingerprint,
-      user_id:        user_id ,
-      url:            url,
-      referrer_url:   referrer_url,
-      created_at:     created_at
-    }
-  end
-
-  def process_event
-    {
-      name:           name,
-      fingerprint:    fingerprint,
-      user_id:        user_id ,
-      created_at:     created_at
-    }
-  end
-
-end
+require_relative './lib/helper_modules/data_formatters'
+require_relative './lib/payload'
 
 
 set :database, {adapter: "sqlite3", database: "eventwebhook.sqlite3"}
@@ -105,13 +36,13 @@ class EventWebhookApp < Sinatra::Base
 
   get '/' do
 
+    # Everything below can be extracted elsewhere?
     trials_count = Event.where(name: 'trial').count
     signups_count = Event.where(name: 'signup').count
     unsubscribe_count = Event.where(name: 'unsubscribe').count
 
     trial_users = Event.where(name: 'trial')
     signup_users = Event.where(name: 'signup', user_id: trial_users.pluck(:user_id))
-
 
     result = {
       actions: {
@@ -122,8 +53,10 @@ class EventWebhookApp < Sinatra::Base
       },
       records: Event.all
     }
+
     views = Event.all
     response['Content-Type'] = 'application/json'
+
     if views.empty?
       { message: "No data available" }.to_json
     else
