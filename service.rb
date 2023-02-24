@@ -11,8 +11,46 @@ require_relative './lib/payload'
 
 set :database, {adapter: "sqlite3", database: "eventwebhook.sqlite3"}
 
+# this is now a proper model
 class Event < ActiveRecord::Base
   self.table_name = 'events'
+  
+  def memory
+    self.class.all
+  end
+
+  def trials_count
+     self.class.where(name: 'trial').count
+  end
+
+  def signups_count
+     self.class.where(name: 'signup').count
+  end
+
+  def unsubscribe_count
+     self.class.where(name: 'unsubscribe').count
+  end
+
+  def trial_users
+    self.class.where(name: 'trial')
+  end
+
+  def signup_users
+    self.class.where(name: 'signup', user_id: trial_users.pluck(:user_id))
+  end
+
+  def actions_and_records
+    {
+      actions: {
+        trials: trials_count,
+        signups: signups_count,
+        'trial-to-signup-conversion': signup_users.count,
+        unsubscribe: unsubscribe_count
+      },
+      records: events
+    }.to_json
+  end
+
 end
 
 class EventWebhookApp < Sinatra::Base
@@ -37,32 +75,15 @@ class EventWebhookApp < Sinatra::Base
 
   get '/' do
 
-    # Everything below can be extracted elsewhere?
-    trials_count = Event.where(name: 'trial').count
-    signups_count = Event.where(name: 'signup').count
-    unsubscribe_count = Event.where(name: 'unsubscribe').count
-
-    trial_users = Event.where(name: 'trial')
-    signup_users = Event.where(name: 'signup', user_id: trial_users.pluck(:user_id))
-
-    result = {
-      actions: {
-        trials: trials_count,
-        signups: signups_count,
-        'trial-to-signup-conversion': signup_users.count,
-        unsubscribe: unsubscribe_count
-      },
-      records: Event.all
-    }
-
-    views = Event.all
     response['Content-Type'] = 'application/json'
+    events = Event.new
 
-    if views.empty?
+    if events.memory.empty?
       { message: "No data available" }.to_json
     else
-      JSON.pretty_generate(JSON.parse(result.to_json))
+      JSON.pretty_generate(JSON.parse(events.actions_and_records))
     end
+
   end
 
 end
