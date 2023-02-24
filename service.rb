@@ -104,12 +104,30 @@ class EventWebhookApp < Sinatra::Base
   end
 
   get '/' do
+
+    trials_count = Event.where(name: 'trial').count
+    signups_count = Event.where(name: 'signup').count
+    unsubscribe_count = Event.where(name: 'unsubscribe').count
+
+    trial_users = Event.where(name: 'trial')
+    signup_users = Event.where(name: 'signup', user_id: trial_users.pluck(:user_id))
+
+
+    result = {
+      actions: {
+        trials: trials_count,
+        signups: signups_count,
+        'trial-to-signup-conversion': signup_users.count,
+        unsubscribe: unsubscribe_count
+      },
+      records: Event.all
+    }
     views = Event.all
     response['Content-Type'] = 'application/json'
     if views.empty?
       { message: "No data available" }.to_json
     else
-      JSON.pretty_generate(JSON.parse(views.to_json)).to_s
+      JSON.pretty_generate(JSON.parse(result.to_json))
     end
   end
 
