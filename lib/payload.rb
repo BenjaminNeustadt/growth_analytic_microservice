@@ -17,7 +17,3 @@ class Payload
   end
 
 end
-
-# def extract
-#   @data.keys.each_with_object({}) { |item, keyword_arguments| keyword_arguments[item.intern] = @data[item] }
-# end
