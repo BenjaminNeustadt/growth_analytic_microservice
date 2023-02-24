@@ -94,14 +94,9 @@ class EventWebhookApp < Sinatra::Base
 
       payload = Payload.new(JSON.parse(request.body.read))
       data = Event.create(payload.process_event)
-
-      if data.valid?
-        status 200
-        'Webhook data stored successfully'
-      end
+      data.valid? ? (status 200 ; 'Webhook data stored successfully') : (status 400 ; 'Error: invalid event data')
 
     rescue JSON::ParserError => e
-    # Return an error response for invalid JSON payload
       status 400
       'Error: invalid JSON payload'
     end
