@@ -4,7 +4,8 @@ module DataFormatters
 
  include Attributions
 
-  def process_view
+  def process_pageview
+
     {
       fingerprint:    fingerprint,
       user_id:        user_id ,
