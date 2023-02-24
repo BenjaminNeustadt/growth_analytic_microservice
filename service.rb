@@ -68,12 +68,12 @@ end
 
   end
 
-set :database, {adapter: "sqlite3", database: "webhook-app.sqlite3"}
+set :database, {adapter: "sqlite3", database: "eventwebhook.sqlite3"}
 
-class View < ActiveRecord::Base
+class Event < ActiveRecord::Base
 end
 
-class WebhookApp < Sinatra::Base
+class EventWebhookApp < Sinatra::Base
 
   configure :development do
     register Sinatra::Reloader

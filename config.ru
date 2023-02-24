@@ -1,3 +1,3 @@
-require_relative './webhook.rb'
+require_relative './service.rb'
 
-run WebhookApp
+run EventWebhookApp
