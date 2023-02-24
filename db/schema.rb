@@ -10,11 +10,19 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_02_24_182849) do
+ActiveRecord::Schema[7.0].define(version: 2023_02_24_213127) do
   create_table "events", force: :cascade do |t|
     t.string "name"
     t.string "fingerprint"
     t.string "user_id"
+    t.string "created_at"
+  end
+
+  create_table "page_views", force: :cascade do |t|
+    t.string "fingerprint"
+    t.string "user_id"
+    t.string "url"
+    t.string "referrer_url"
     t.string "created_at"
   end
 

@@ -12,6 +12,7 @@ require_relative './lib/payload'
 set :database, {adapter: "sqlite3", database: "eventwebhook.sqlite3"}
 
 class Event < ActiveRecord::Base
+  self.table_name = 'events'
 end
 
 class EventWebhookApp < Sinatra::Base
