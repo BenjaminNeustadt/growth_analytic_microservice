@@ -18,3 +18,4 @@ gem 'sinatra-activerecord'
 
 gem 'sqlite3'
 
+gem "rspec", "~> 3.12"
