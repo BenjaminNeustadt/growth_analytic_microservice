@@ -1,3 +1,3 @@
-require_relative './service.rb'
+require_relative './app/growth_analytic'
 
-run EventWebhookApp
+run GrowthAnalytic
