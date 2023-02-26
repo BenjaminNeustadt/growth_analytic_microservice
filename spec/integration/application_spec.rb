@@ -96,6 +96,7 @@ RSpec.describe GrowthAnalytic do
         response = post('/event', payload_packet)
         expect(response.body).to eq("Error: invalid JSON payload")
       end
+
     end
 
     around do |example|
