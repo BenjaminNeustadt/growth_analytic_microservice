@@ -5,11 +5,11 @@ require 'sinatra/reloader'
 require 'json'
 
 [
-  '/../lib',
-  '/../lib/helpers',
-  '/../config',
-  '/controllers',
-  '/models'
+  '/../../lib',
+  '/../../lib/helpers',
+  '/../../config',
+  '/.',
+  '/../models'
 ].each { |path| $LOAD_PATH << File.expand_path(File.dirname(__FILE__)) + path}
 
 require 'data_formatters'

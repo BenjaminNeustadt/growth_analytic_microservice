@@ -1,6 +1,6 @@
 require 'spec_helper'
 require 'rack/test'
-require_relative '../../app/growth_analytic'
+require_relative '../../app/controllers/growth_analytic.rb'
 require 'database_cleaner'
 
 RSpec.describe GrowthAnalytic do
@@ -8,7 +8,6 @@ RSpec.describe GrowthAnalytic do
   include Rack::Test::Methods
 
   let(:app) { GrowthAnalytic.new}
-
 
   context "GET to /" do
     it "returns 200 OK with empty data" do
@@ -96,7 +95,6 @@ RSpec.describe GrowthAnalytic do
         response = post('/event', payload_packet)
         expect(response.body).to eq("Error: invalid JSON payload")
       end
-
     end
 
     around do |example|
@@ -106,5 +104,4 @@ RSpec.describe GrowthAnalytic do
       end
     end
   end
-
 end

@@ -1,3 +1,3 @@
-require_relative './app/growth_analytic'
+require_relative './app/controllers/growth_analytic'
 
 run GrowthAnalytic
