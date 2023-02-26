@@ -1,21 +1,19 @@
 require 'webhookmessages'
-# Should this inherit from the application controller and just be called EndpointController?
-# Would it need to be a class to inherit?
-module EndPoints
 
+module EndPoints
   include WebHookMessages
 
-   def event_webhook
+  def event_webhook
 
-       payload = Payload.new(request.body.read)
-       data = Event.create(payload.process)
+      payload = Payload.new(request.body.read)
+      data = Event.create(payload.process)
 
-       web_response(*STATUS[data.valid?])
+      web_response(*STATUS[data.valid?])
 
-   rescue JSON::ParserError => e
+  rescue JSON::ParserError => e
 
-       web_response(400, :invalid_payload)
-   end
+      web_response(400, :invalid_payload)
+  end
 
   def event_endpoint
 
