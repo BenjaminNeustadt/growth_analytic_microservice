@@ -2,6 +2,6 @@ require 'sinatra/activerecord/rake'
 
 namespace :db do
   task :load_config do
-    require "./app/growth_analytic"
+    require "./app/controllers/growth_analytic_controller"
   end
 end

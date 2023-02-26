@@ -2,3 +2,6 @@ notes.adoc
 
 # Ignore all the databases
 *.sqlite3
+
+# Ignore tool for building seeds
+create_seeds.rb
