@@ -1,13 +1,13 @@
 require 'spec_helper'
 require 'rack/test'
-require_relative '../../app/controllers/growth_analytic.rb'
+require_relative '../../app/controllers/growth_analytic_controller.rb'
 require 'database_cleaner'
 
-RSpec.describe GrowthAnalytic do
+RSpec.describe GrowthAnalyticController do
 
   include Rack::Test::Methods
 
-  let(:app) { GrowthAnalytic.new}
+  let(:app) { GrowthAnalyticController.new}
 
   context "GET to /" do
     it "returns 200 OK with empty data" do

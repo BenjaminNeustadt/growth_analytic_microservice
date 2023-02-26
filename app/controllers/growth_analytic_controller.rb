@@ -17,9 +17,10 @@ require 'endpoints'
 require 'event'
 require 'payload'
 require 'routes'
+require 'application_controller'
 
 # This is the Application Controller
-class GrowthAnalytic < Sinatra::Base
+class GrowthAnalyticController < ApplicationController
 
   include EndPoints
 
