@@ -16,8 +16,6 @@ require 'endpoints'
 require 'event'
 require 'payload'
 
-#set :database, {adapter: "sqlite3", database: "eventwebhook.sqlite3"}
-
 # This is the Application Controller
 class GrowthAnalytic < Sinatra::Base
 
