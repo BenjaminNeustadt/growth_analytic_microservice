@@ -21,3 +21,8 @@ gem 'sqlite3'
 gem "rspec", "~> 3.12"
 
 gem "colorize", "~> 0.8.1"
+
+
+group :test do
+    gem 'simplecov', require: false
+end

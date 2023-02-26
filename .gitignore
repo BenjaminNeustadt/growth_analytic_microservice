@@ -8,3 +8,5 @@ notes.adoc
 create_seeds.rb
 
 csv_data_generator.rb
+
+coverage/

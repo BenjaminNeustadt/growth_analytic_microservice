@@ -6,8 +6,6 @@ require 'database_cleaner'
 RSpec.describe Payload do
   include Rack::Test::Methods
 
-  #let(:payload) { Payload.new}
-
   context "knows what to do with data" do
     it "parses incoming JSON data" do
       incoming_data ='{
