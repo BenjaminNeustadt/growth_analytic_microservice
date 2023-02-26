@@ -2,6 +2,6 @@ development:
   adapter: sqlite3
   database: eventwebhook.sqlite3
 
-tests:
+test:
   adapter: sqlite3
   database: test-eventwebhook.sqlite3

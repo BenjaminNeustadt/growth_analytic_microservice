@@ -1,1 +1,4 @@
 notes.adoc
+
+# Ignore all the databases
+*.sqlite3
