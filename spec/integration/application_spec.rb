@@ -14,8 +14,22 @@ RSpec.describe GrowthAnalytic do
 
       response = get('/')
       expect(response.status).to eq(200)
+    end
 
+    it "returns empty data initially" do
+      response = get('/')
+      result_data = <<~EOS
+        {
+          "actions": {
+            "trials": 0,
+            "signups": 0,
+            "trial-to-signup-conversion": 0,
+            "unsubscribe": 0
+          },
+          "records": "No data available"
+        }
+        EOS
+      expect(response.body).to eq(result_data.chomp)
     end
   end
-
 end

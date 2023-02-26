@@ -9,7 +9,7 @@ module WebHookMessages
     valid: 'Webhook data stored successfully',
     invalid: 'Error: invalid event data',
     invalid_payload: 'Error: invalid JSON payload',
-    absent_data: {message: "No data available"}.to_json
+    absent_data: "No data available"
   }
 
   def web_response(code, message)
