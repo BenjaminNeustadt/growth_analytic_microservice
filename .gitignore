@@ -4,4 +4,7 @@ notes.adoc
 *.sqlite3
 
 # Ignore tool for building seeds
+/csv_tools
 create_seeds.rb
+
+csv_data_generator.rb
