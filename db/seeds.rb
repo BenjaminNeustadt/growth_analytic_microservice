@@ -1,5 +1,5 @@
 require 'colorize'
-require_relative './signup_event_seeding.rb'
+require_relative './event_seeding.rb'
 
 puts "Seeding...".colorize(:black).on_green
 9.times do
@@ -8,8 +8,14 @@ puts "Seeding...".colorize(:black).on_green
 end
 puts
 
-# To omit specific events from seeding comment the relevant line
-seed_signup_events
-seed_trial_events
+# TO OMIT AN EVENT TYPE FROM SEEDING COMMENT OUT THE RELEVANT LINE
+
+EVENT_TYPES = 
+[
+  './db/data/event_trial_data.csv',
+  './db/data/event_signup_data.csv'
+]
+
+seed_events
 
 puts "Seeding is complete".light_green
