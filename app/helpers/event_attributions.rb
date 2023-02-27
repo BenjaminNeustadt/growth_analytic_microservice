@@ -1,4 +1,4 @@
-module Attributions
+module EventAttributionsHelper
 
   def data
     @data

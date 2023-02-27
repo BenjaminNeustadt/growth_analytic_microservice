@@ -1,8 +1,8 @@
-require_relative './attributions'
+require_relative './event_attributions'
 
 module DataFormatters
 
- include Attributions
+ include EventAttributionsHelper
 
   def process_pageview
 
