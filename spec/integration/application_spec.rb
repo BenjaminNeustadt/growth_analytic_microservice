@@ -98,7 +98,7 @@ RSpec.describe GrowthAnalyticController do
     end
   end
 
-    context "POST to '/pageviews'" do
+    context "POST to '/pageview'" do
 
       describe 'HTTP responses' do
 
@@ -120,7 +120,7 @@ RSpec.describe GrowthAnalyticController do
 
         it "STATUS invalid JSON format (400)" do
 
-          valid_pageview_event = 
+          pageview_payload = 
           {
             "fingerprint": "b998efcb-1af3-4149-9b56-34c4482f6606",
             "user_id": "nil",
@@ -129,20 +129,13 @@ RSpec.describe GrowthAnalyticController do
             "created_at": "2023-01-20 13:59:56.437947 UTC"
           }
 
-          invalid_payload_packet =
-          {
-            "name": "signup",
-            "fingerprint": "b998efcb-1af3-4149-9b56-34c4482f6606",
-            "user_id": "6666bd053866341d6ad30000",
-            "created_at": "2023-01-18 12:33:41.127641 UTC"
-          }
-
-          response_when_valid = post('/pageview', valid_pageview_event.to_json)
-          response_when_invalid = post('/event', invalid_payload_packet)
+          response_when_valid = post('/pageview', pageview_payload.to_json)
+          response_when_invalid = post('/pageview', pageview_payload)
 
           expect(response_when_valid.status).to eq(200)
           expect(response_when_invalid.status).to eq(400)
         end
+
       end
 
     end
