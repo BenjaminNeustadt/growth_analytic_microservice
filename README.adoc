@@ -1,4 +1,4 @@
-= Building a microservice with webhooks (Blinkist)
+= Growth Analytic Microservice (Blinkist)
 Benjamin b.james.neustadt@gmail.com
 :author: Benjamin
 :copyright: (C) 2022 {author}
@@ -12,321 +12,165 @@ Benjamin b.james.neustadt@gmail.com
 :source-highlighter: highlight.js
 :highlightjsdir: ./highlight
 //URLs
-:url-difference-webhook-websocket: https://stackoverflow.com/a/24747947
-:url-websockets: https://www.theodinproject.com/lessons/ruby-on-rails-websockets-and-actioncable
-:url-cookies-vs-storage: https://www.developer.com/guides/web-storage-api-vs-cookies-for-browser-data-storage/
-:url-sinatra-testing-webhook-ngrok: https://sendgrid.com/blog/simple-webhook-testing-using-sinatra-ngrok/
+:url-postman: https://www.postman.com/
+:url-ngrok: https://ngrok.com/
+:url-hanami: https://hanamirb.org/blog/2020/02/26/introducing-hanami-api/#memory
 
-== How you approach such a task in general
+== Usage
 
-.As I have never used a webhook before I am researching how it actually works.
+To use the application follow these steps:
 
-====
-My understanding so far is that a webhook is an API in reverse.
+- Clone this repo:
 
-An API exposes data on an endpoint;
-A webhook "informs" an endpoint of certain data
+[source, sh]
+----
+git clone https://github.com/BenjaminNeustadt/growth_analytic_microservice.git
+----
 
-A webhook is similar to a websocket, they both attempt to solve the same problem,
-continuous polling issue.
-Resource:
-- {url-difference-webhook-websocket}[in stackoverflow answer]
-- {url-websockets}[Odin project]
+- Install the dependencies:
 
-A webhook is for server to server
+[source, sh]
+----
+bundle install
+----
 
-A webhook is not a protocol, while a websocket is.
+- Setup the databases:
 
-A websocket is client to server
+[source, sh]
+----
+bundle exec rake db:setup
+----
 
-The continuous polling issue:
+- Run the tests:
 
-As a user I want to know when there has been an update on github, when someone has updated their profile with a new commit for instance.
-So We can query the API, exposing the data of the profile.
-I know they will update at least once today, so I query the endpoint every minute in the hour.
-I make 60 queries, and I then notice the difference.
-I can do a diff on each return of data to see what the difference is.
+[source, sh]
+----
+rspec -fd
+----
 
-This would work, though it would be considered expensive (effort wise), we would be using resources that we do not need to use.
+- Start the server locally:
 
-So instead of this, we can say to the server: "here is a URL, where you can POST to when a change occurs on your server, send an event webhook to me"
+[source, sh]
+----
+rackup
+----
 
-====
+The database is seeded with 200 example packets of data, that illustrate stored data extracted from payloads that correspond to "Signup events".
+To add data to the database and expose it on the API endpoint you can use {url-postman}[Postman], or {url-ngrok}[Ngrok].
 
-As we are working towards an MVP, I am first going to use a Sinatra framework, as it is super light weight,
-and as it is slightly more low level than Rails, if I encounter any problems I then be able to trouble shoot easily.
-When I have everything running, the tests written, and I am able to consume a payload, and then expose it on another endpoint,
-I will switch it to Rails.
+== Dependencies
 
-By endpoint we mean route.
-A webhook is therefor a POST route,
-we can then havea GET route to expose the endpoint.
+- Ruby 3.0.0
 
-We will need to have three endpoints,
-2 for consuming two different types of payload,
-one for exposing the payload
+- Sinatra
 
-in terms of storing the payload data, there are a few ways we can go about doing this:
-one way is to simply keep the data in a folder on the server,
-another way would be to store the data on a database,
-as we currently know what attributes are stored on each type of payload, we can make a few different databases,
+- Rackup
 
-as this may be considered senstive data it may be a safer option to use a POSTGRESQL database,
-or we could use mongodb.
+- Rake
 
-Which database would be best to use?
-We could postpone this for a moment,
-and simply refer to the ORM.
-We can use Activerecord as the ORM,
-it is good because it is available for Sinatra.
-We are using Sinatra because it is lightweight,
-we are using Sinatra because it is a micro framework.
+- Activerecord
 
-We could use Rails immediately,
-the reason for not using Rails currently is that this is an MVP.
-We can quite easily replace the Sinatra framework for the Rails one after.
+- Sqlite3
 
-They did specify in the brief that once live it will accept all updates from the Blinklist site.
-Since they have 10 million users this could a great deal, and Sinatra will not be able to deal with this.
+- Colorize
 
-So the better option would be use Rails.
+- Rspec
 
-So what we will do is use Sinatra to build a toy version.
-Then we will use Rails, to build the real MVP.
+- Simplecov
 
-First task will be to allow a service to receive a payload and display it.
-We can use an array to store the payload temporarily,
-Once we achieve this, then we will choose a database and ORM.
+== Testing
 
-== On what criteria you base your decisions
+I used Rspec for both integration testing and unit testing.
+To check for code coverage I used 'Simple Cov' gem, which reports approximately 99% code coverage.
 
-The decision to use sinatra for a toy version of the micro service
-after this has been built we can use Rails to scale up.
-provided everything is ok in sinatra it should be fine to transfer,
-the only difference I can think of just yet is that Rails does not come packaged with 'http' whereas Sinatra does.
+== Approach
 
-== How you architect such projects
+My approach was to first read the brief and consider the relations that would occur between the different payload packages for events and signups.
+I understood that for the MVP only the signup events would be necessary, but I could not help consider the possible relations between signup events and pageviews.
+Specifically I was interested in how pageview payloads could best be leveraged to extract as much information as possible from them.
+Although I did not implement them, I considered such questions as:
+In order to register a conversion event (from an unsubscribed user to a subscribed user),
+and to know from where this user originally came from (thereby informing us which was the campaign driven the most adoption) which pageview event would be considered the original source pageview event: the one furthest back in time, or the most recent one?
+I considered this when designing the API of the "events" which I labelled as "signup", "trial", "unsubscribe" to illustrate the basis for user state.
+I also included conversion events within the signup event, if a user previously on trial "signed-up" (by using the fingerprint stored in cookies).
+I did this because I felt it would be useful information for exterior microservices to quickly consult the "growth analytic" API without having to recalculate that information and slow down the process, since it would be consumed in real time.
+I therefore thought that it would be useful to leverage the calculation of the database to omit some of that responsibility later on.
 
-.Examples
+For the most part, my decisions were based on writing the cleanest and most efficient possible code.
+I used Sinatra as a framework, as I felt that I could personally produce an MVP of a better quality using Sinatra, as I am more familiar with its DSL.
+Although I was cognizant that those reviewing may prefer Rails, so where possible I attempted to incorporate a Rails "flavour".
+I used an MVC structure, with RESTful routes.
+The file structure is comparable to a Rails application; so the routes, for instance, can be found inside the "config" file in the root of the application.
 
-### Direct visit
+I considered how I could make the application as "tight" or "compact" as possible, and felt that Sinatra would facilitate this, since I only required the dependencies I would actually need.
+Since Rails and Sinatra both rely on Rake, the commands required to run the setting up of the database would be almost identical,
+I used the challenge as an opportunity to better understand some of the ideas behind Rails, but was cognizant to keep the code as DRY as possible.
+In some places however I was unsure if certain refactoring would cause a problem for speed.
+For instance, both POST routes of "signup events" and "pageviews" currently use `process_webhook_payload` in "app/controllers/'endpoints.rb".
 
-```
-{
-  fingerprint: "b998efcb-1af3-4149-9b56-34c4482f6606",
-  user_id: null,
-  url: "https://www.blinkist.com/en",
-  referrer_url: null,
-  created_at: "2023-01-20 13:59:56.437947 UTC"
-}
-```
+The longer build time was beneficial to not me, and in the long run these are some benefits that I considered:
 
-### Google Search
+1. Having built every aspect from the ground up I feel that I could personally more easily integrate new features or extensions.
+2. I would eliminate some of the Rails magic by staying closer to Ruby language.
+3. It would be easier for me to maintain.
 
-```
-{
-  fingerprint: "b998efcb-1af3-4149-9b56-34c4482f6606",
-  user_id: null,
-  url: "https://www.blinkist.com/en/books/lives-of-the-stoics-en",
-  referrer_url: "https://www.google.de/",
-  created_at: "2023-01-20 13:59:56.437947 UTC"
-}
-```
+In regards to what I mean by Rails flavour, besides the file structure, here is an example in syntax:
 
-### Facebook Ad
-
-```
-{
-  fingerprint: "b998efcb-1af3-4149-9b56-34c4482f6606",
-  user_id: null,
-  url: "https://www.blinkist.com/en/landing-pages/meet-blinkist?utm_source=facebook&utm_campaign=202301_US_NY_Resolutions&utm_medium=paid&utm_content=19284192381935",
-  referrer_url: "https://www.facebook.com/",
-  created_at: "2023-01-20 14:02:21.16808 UTC"
-}
-```
-The link routes to blinkist but it carries the history of where it came from, or where the link is actually living.
-
-### A visitor with Blinkist account
-
-```
-{
-  fingerprint: "b998efcb-1af3-4149-9b56-34c4482f6606",
-  user_id: "6666bd053866341d6ad30000",
-  url: "https://www.blinkist.com/en/library",
-  referrer_url: null,
-  created_at: "2023-01-18 12:33:41.127641 UTC"
-}
-```
-
-           +---------------------------+
-           |      **MICRO-SERVICE**    |                                                 +-------------------------+
-           |            _SERVER_       |                                                 |                         |
-           |                           |                                                 |   **BLINKIST site**     |
-           |     webhook               |                                                 |                         |
-           |                           |                                                 |   2 types of webhooks:  |
-           |    receives data payload  |                                                 |                         |
-           |                           |                                                 |                         |
-           |    stores data payload    |                                                 |   1  pageview           |
-           |                           |                                                 |                         |
-           |    exposes data payload   |                                                 |   2  event:             |
-           |                           |                                                 |     - signup            |
-           |                           |                                                 |     - starting trial    |
-           |                           |                                                 |     - etc.              |
-           |                           |                                                 |                         |
-           |                           |                                                 |                         |
-           |                           |                                                 +-------------------------+
-           +---------------------------+
-                                                          PAGEVIEW  WEBHOOKS
-
-                                                      +---------------------------+
-                                                      |    Blinkist site          |
-    Create a URL that allows POST                     |                           |     <===== Do they get given the webhook?
-                                                      |                           |
-                                                      +---------------------------+
-                                                      +---------------------------+
-                                                      |     Google site           |
-                                                      |                           |
-                                                      |                           |
-                                                      +---------------------------+
-                                                      +---------------------------+
-                                                      |      FACEBOOK             |
-                                                      |                           |
-                                                      |                           |
-                                                      +---------------------------+
-
-
-
-
-
-
-
-== Further resources
-{url-cookies-vs-storage}[dofference between cookies and storage]
-{url-sinatra-testing-webhook-ngrok}
-
-
-== Notes
-
-.Example webhook based on log file
 [source, rb]
 ----
-# webhook to log referral to this page from facebook
-# and redirect to the facebook page
+# Rails routes
 
-require 'sinatra'
-require 'json'
-require 'logger'
+Rails.application.routes.draw do
+  root "articles#index"
 
-# set up logger
-log = Logger.new('webhook.log')
-log.level = Logger::INFO
-
-# set up facebook page
-fb_page = 'https://www.facebook.com/yourpage'
-
-# set up webhook
-get '/webhook' do
-  log.info "webhook called"
-  log.info params
-  log.info params['hub.challenge']
-  params['hub.challenge']
+  get "/articles", to: "articles#index"
 end
-
-# set up redirect
-get '/redirect' do
-  log.info "redirect called"
-  log.info params
-  log.info params['ref']
-  redirect fb_page + '?ref=' + params['ref']
-end
-
-# set up default
-get '/' do
-  log.info "default called"
-  log.info params
-  redirect fb_page
-end
-
-# set up default
-get '/*' do
-  log.info "default called"
-  log.info params
-  redirect fb_page
-end
-
-# set up default
-post '/' do
-  log.info "default called"
-  log.info params
-  redirect fb_page
-end
-
-# set up default
-post '/*' do
-  log.info "default called"
-  log.info params
-  redirect fb_page
-end
-
-# set up default
-put '/' do
-  log.info "default called"
-  log.info params
-  redirect fb_page
-end
-
-# set up default
-put '/*' do
-  log.info "default called"
-  log.info params
-  redirect fb_page
-end
-
-# set up default
-delete '/' do
-  log.info "default called"
-  log.info params
-  redirect fb_page
-end
-
-# set up default
-delete '/*' do
-  log.info "default called"
-  log.info params
-  redirect fb_page
-end
-
-# set up default
-options '/' do
-  log.info "default called"
-  log.info params
-  redirect fb_page
-end
-
-# set up default
-options '/*' do
-  log.info "default called"
-  log.info params
-  redirect fb_page
-end
-# set up default
-
-head '/' do
-  log.info "default called"
-  log.info params
-  redirect fb_page
-end
-
-# set up default
-head '/*' do
-  log.info "default called"
-  log.info params
-  redirect fb_page
-end
-
 ----
 
-# Read the `File` documentation and the `IO` class documentation.
+[source, rb]
+----
+# Growth Analytic routes
+
+module Routes
+
+  def self.registered app
+    app.post('/event') { process_webhook_payload }
+
+    app.get('/') { event_endpoint }
+  end
+
+end
+----
+
+I considered other frameworks, particularly {url-hanami}[Hanami], which I understand to be faster in various capacities to both Sinatra and Rails.
+I look forward to building this again using Rails, and then Hanami.
+I also considered such questions as whether it would ne more benficial to use Web storage over cookies.
+
+I was uncertain how the webhook would actually be integrated in the client-server communication.
+Though I gave an example of what I understaod would be the process in my diagran below.
+My initial though was that there would be a redirect to Blinklist from the webhook.
+
+== Database
+
+For the purposes of the MVP I used SQLite3, and used the ActiveRecord ORM, another database could easily be switched out for this one therefore.
+
+== How I would approach such a task generally
+
+1. Notes, initial thoughts, research
+2. Diagramming (see below)
+4. Tests
+5. Build routes
+6. Tests
+7. Build things inside one file and gradually extract/refactor outwards
+8. Setup an ORM and a storage file
+9. Create seed data and use a service to post mock data
+
+I would normally write tests first, and follow a test driven development process.
+This instance was something of an anomaly as I played around with inserting mock data through the webhooks, and then found that I had not written tests.
+So I then did regression testing. Having done so I felt more confident in refactoring.
+I then fell back on test driven development when adding other routes and logic, specifically for the 'PageView' class that had not yet been written.
+My main concern was really the attributions, so I spent a good deal of time considering those, I have left my initial notes on the API design at the end of this README.
+
 
 == Diagram Planning
 
@@ -335,7 +179,7 @@ end
                               |                               |                            |                       |
                               |        CLIENT                 |                   🔎       |   _FACEBOOK AD_       |          POST                     +----------------------+
                               |                               | -------------------------> |                       | ----------------------------->    |      🕸️ 🕸️ 🕸️        |
-                              |           👨💻                |                            |                       |                                   |                      | -------------------------------->     CALLS THE EVENT AND DROPS OFF THE PAYLOAD
+                              |            💻                 |                            |                       |                                   |                      | -------------------------------->     CALLS THE EVENT AND DROPS OFF THE PAYLOAD
                               |                               |                            |                       |                                   |    **WEBHOOK**       |                       ++-----------------------------------------------------------++
                               |-------------------------------+ ---------------+           |                       |                                   |                      |                       || PAYLOAD =                                                 ||
                                                                                |           +-----------------------+                                   |    2 entry points    |                       || {                                                         ||
@@ -353,10 +197,10 @@ end
                               |                               |  <-------------------------------------------------------------------------------------+----------------------+                       ||                                                           ||
                               |                               |                                                                                                   |                                   ++-----------------------------------------------------------++
                               |                               |                                                                                                   |
-                              +-------------------------------+                                                                                        +----------+----------+                          NOTE: the benefit of a microservice is that it can do ONE small and well defined thing operation
-                                                                                                                                                       |                     |                                Therefore, the API endpoint that exposes the data should not do any more than it absolutely needs to.
-                                                                                                                                                       | 3rd ENDPOINT API    |                                That will be the role of other services. This service will only store and provide for later user the valuable data.
-                                                                                                                                               +---------------------------------------------+----------------+   This is one step in the factory. Just process. It's the netry point for the data, that's it.
+                              +-------------------------------+                                                                                        +----------+----------+
+                                                                                                                                                       |                     |
+                                                                                                                                                       | 3rd ENDPOINT API    |
+                                                                                                                                               +---------------------------------------------+----------------+
                                                                                                                                                |                                                              |
                                                                                                                                                |  {response: status ok,                                       |
                                                                                                                                                |    users: {                                                  |
@@ -381,7 +225,6 @@ end
                                                                                                                                                |                                                              |
                                                                                                                                                | }             (DRAFT)                                        |
                                                                                                                                                +---------------------------------------------+----------------+
-
                                                                                                                                                         ^             ^           ^            ^
                                                                                                                                                         |             |           |            |
                                                                                                                                                         |             |           |            |
@@ -392,20 +235,26 @@ end
                                                                                                                                                         |             |           |            |
                                                                                                                                                         |             |           |            |
                                                                                                                                                         |             |           |            |
-
-                                                                                                                                                         OTHER MICROSERVICES THAT CAN PERFORM BUSINESS LOGIC ON THE STORED DATA,
-                                                                                                                                                         AFTER CONSUMING IT
-
-                                                                                                                                                         EXAMPLES:
-                                                                                                                                                         - REPORTING CONVERSION EVENTS
-                                                                                                                                                         - CALCULATING ROI OF CAMPAIGNS
-                                                                                                                                                         - MAKE CAMPAIGN BIDDING DECISIONS
-
-
-
+                                                                                                                                                       +-------------------------------------------------------------------------+
+                                                                                                                                                       | OTHER MICROSERVICES THAT CAN PERFORM BUSINESS LOGIC ON THE STORED DATA, |
+                                                                                                                                                       | AFTER CONSUMING IT                                                      |
+                                                                                                                                                       |                                                                         |
+                                                                                                                                                       | EXAMPLES:                                                               |
+                                                                                                                                                       | - REPORTING CONVERSION EVENTS                                           |
+                                                                                                                                                       | - CALCULATING ROI OF CAMPAIGNS                                          |
+                                                                                                                                                       | - MAKE CAMPAIGN BIDDING DECISIONS                                       |
+                                                                                                                                                       +-------------------------------------------------------------------------+
 
 
- == Notes on API design
+
+
+== API endpoint design considerations
+:NOTE:
+The benefit of a microservice is that it can do ONE small and well defined operation.
+Therefore, the API endpoint that exposes the data should not do any more than it absolutely needs to.
+That will be the role of other services.
+This service will only store and provide for later use the valuable data.
+This is one step in the process. It's the entry point for the data, it is only the data factory.
 
 [source, txt]
 ----

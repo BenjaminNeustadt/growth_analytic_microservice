@@ -18,11 +18,9 @@ gem 'sinatra-activerecord'
 
 gem 'sqlite3'
 
-gem "rspec", "~> 3.12"
-
 gem "colorize", "~> 0.8.1"
 
-
 group :test do
+    gem "rspec", "~> 3.12"
     gem 'simplecov', require: false
 end
