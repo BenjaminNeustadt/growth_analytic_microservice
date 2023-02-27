@@ -1,5 +1,4 @@
 class Payload
- 
  include DataFormatHelper
  
   private

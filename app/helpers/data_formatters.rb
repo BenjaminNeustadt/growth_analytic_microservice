@@ -1,7 +1,6 @@
 require_relative './event_attributions'
 
 module DataFormatHelper
-
  include EventAttributionsHelper
 
   def process_pageview

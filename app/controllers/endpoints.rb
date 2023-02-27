@@ -1,7 +1,7 @@
 require 'webhookmessages'
 
 module EndPoints
-  include WebHookMessages
+  include WebHookMessageHelper
 
   def process_webhook_payload
 

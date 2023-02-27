@@ -1,6 +1,5 @@
 class Event < ActiveRecord::Base
-
-  include WebHookMessages
+  include WebHookMessageHelper
 
   self.table_name = 'events'
   
