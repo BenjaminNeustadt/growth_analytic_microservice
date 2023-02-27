@@ -78,10 +78,35 @@ To add data to the database and expose it on the API endpoint you can use {url-p
 
 - Simplecov
 
+== Rake
+
+To get a list of all Rake commands run:
+
+[source, sh]
+----
+bundle exec rake -T
+----
+
+To drop the database: 
+
+[source, sh]
+----
+RACK_ENV=development rake db:drop
+----
+
+To reset the database:
+
+[source, sh]
+----
+RACK_ENV=development rake db:reset
+----
+
+Running these last two rake commands without specifying the environment will result in a request for environement confirmation.
+
 == Testing
 
-I used Rspec for both integration testing and unit testing.
-To check for code coverage I used 'Simple Cov' gem, which reports approximately 99% code coverage.
+I used Rspec for both integration and unit testing.
+To check for code coverage I used the 'Simple Cov' gem, which reports approximately 99% code coverage.
 
 == Approach
 
@@ -91,30 +116,61 @@ Specifically I was interested in how pageview payloads could best be leveraged t
 Although I did not implement them, I considered such questions as:
 In order to register a conversion event (from an unsubscribed user to a subscribed user),
 and to know from where this user originally came from (thereby informing us which was the campaign driven the most adoption) which pageview event would be considered the original source pageview event: the one furthest back in time, or the most recent one?
-I considered this when designing the API of the "events" which I labelled as "signup", "trial", "unsubscribe" to illustrate the basis for user state.
-I also included conversion events within the signup event, if a user previously on trial "signed-up" (by using the fingerprint stored in cookies).
-I did this because I felt it would be useful information for exterior microservices to quickly consult the "growth analytic" API without having to recalculate that information and slow down the process, since it would be consumed in real time.
-I therefore thought that it would be useful to leverage the calculation of the database to omit some of that responsibility later on.
+It turns out that an answer to this would be that two attributions can be allotted: "first click" and "last click".
 
-For the most part, my decisions were based on writing the cleanest and most efficient possible code.
+I considered this when designing the API of the "events" which I labelled as "signup", "trial", "unsubscribe" to illustrate some basis for user "state".
+I also included conversion events within the signup event, if a user previously on trial "signed-up" (by using the fingerprint stored in cookies).
+I did this because I felt it would be useful information for exterior microservices to quickly consult the "growth analytic" API without having to recalculate that information and slow down their respective process, since it would be consumed in real time.
+I therefore thought that it would be useful to leverage the calculation of the database to omit some of that responsibility later on.
+Though this is a question I am not entirely sure about.
+
+For the most part, my decisions were based on writing the cleanest and most efficient possible code. As I felt that writing unstructured code would poetntially slow down the service,
+and cause a bottlekneck for the incoming requests.
+
+=== Framework
+
 I used Sinatra as a framework, as I felt that I could personally produce an MVP of a better quality using Sinatra, as I am more familiar with its DSL.
 Although I was cognizant that those reviewing may prefer Rails, so where possible I attempted to incorporate a Rails "flavour".
+
+I considered other frameworks, particularly {url-hanami}[Hanami], which I understand to be faster in various capacities to both Sinatra and Rails.
+In the long run, I would like to switch it to Rails or Hanami.
+I also considered such questions as whether it would be more benficial to use Web storage over cookies.
+
+In regards the webhook, I was uncertain how the it would actually be integrated in the client-server communication.
+Though I gave an example of what I understaod would be the process in my diagram below.
+My initial thought was that there would be a redirect to Blinklist from the webhook.
+
+=== Structure
+
 I used an MVC structure, with RESTful routes.
 The file structure is comparable to a Rails application; so the routes, for instance, can be found inside the "config" file in the root of the application.
 
-I considered how I could make the application as "tight" or "compact" as possible, and felt that Sinatra would facilitate this, since I only required the dependencies I would actually need.
+I considered how I could make the application as or "compact" as possible, and felt that Sinatra would facilitate this, since I only required the dependencies I would actually need.
 Since Rails and Sinatra both rely on Rake, the commands required to run the setting up of the database would be almost identical,
 I used the challenge as an opportunity to better understand some of the ideas behind Rails, but was cognizant to keep the code as DRY as possible.
 In some places however I was unsure if certain refactoring would cause a problem for speed.
-For instance, both POST routes of "signup events" and "pageviews" currently use `process_webhook_payload` in "app/controllers/'endpoints.rb".
+For example, both POST routes of "signup events" and "pageviews" currently use `process_webhook_payload` in "app/controllers/'endpoints.rb".
 
-The longer build time was beneficial to not me, and in the long run these are some benefits that I considered:
+=== Bottleneck
+
+Some things that I considered to safeguard against potential request congestion, or overloading the server were:
+
+- Load balancing, by distributing the traffic of requests across multiple servers we can improve the latency of the system.
+- Using caching at the necessary application layers to boost the response time. 
+
+
+Overall, the downside of using Sinatra was the longer build time, though untimately it was beneficial to me,
+and in the long run these are some benefits that I considered:
 
 1. Having built every aspect from the ground up I feel that I could personally more easily integrate new features or extensions.
 2. I would eliminate some of the Rails magic by staying closer to Ruby language.
 3. It would be easier for me to maintain.
 
-In regards to what I mean by Rails flavour, besides the file structure, here is an example in syntax:
+
+=== Syntax
+
+Regarding some aspects of the code syntax where I was inspired by "Rails flavour",
+besides the file structure, here is an example in syntax:
 
 [source, rb]
 ----
@@ -142,25 +198,19 @@ module Routes
 end
 ----
 
-I considered other frameworks, particularly {url-hanami}[Hanami], which I understand to be faster in various capacities to both Sinatra and Rails.
-I look forward to building this again using Rails, and then Hanami.
-I also considered such questions as whether it would ne more benficial to use Web storage over cookies.
 
-I was uncertain how the webhook would actually be integrated in the client-server communication.
-Though I gave an example of what I understaod would be the process in my diagran below.
-My initial though was that there would be a redirect to Blinklist from the webhook.
+=== Database
 
-== Database
-
-For the purposes of the MVP I used SQLite3, and used the ActiveRecord ORM, another database could easily be switched out for this one therefore.
+For the purposes of the MVP I used SQLite3, and the ActiveRecord ORM. Another database could easily be switched out for this one,
+I feel the database choice for this service would be important, and I feel a relatinoal database would be optimal, as we would be prioritizing for the strong consistency requirement.
 
 == How I would approach such a task generally
 
-1. Notes, initial thoughts, research
+1. Notes, initial thoughts, research!
 2. Diagramming (see below)
-4. Tests
+4. Test
 5. Build routes
-6. Tests
+6. Test
 7. Build things inside one file and gradually extract/refactor outwards
 8. Setup an ORM and a storage file
 9. Create seed data and use a service to post mock data
@@ -249,6 +299,7 @@ My main concern was really the attributions, so I spent a good deal of time cons
 
 
 == API endpoint design considerations
+
 :NOTE:
 The benefit of a microservice is that it can do ONE small and well defined operation.
 Therefore, the API endpoint that exposes the data should not do any more than it absolutely needs to.
@@ -258,7 +309,6 @@ This is one step in the process. It's the entry point for the data, it is only t
 
 [source, txt]
 ----
- As much info is available as possible
 
  Real-time
      JSON return
