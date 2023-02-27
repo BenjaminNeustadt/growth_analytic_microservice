@@ -1,6 +1,6 @@
 class Payload
  
- include DataFormatters
+ include DataFormatHelper
  
   private
  

@@ -1,6 +1,6 @@
 require_relative './event_attributions'
 
-module DataFormatters
+module DataFormatHelper
 
  include EventAttributionsHelper
 
