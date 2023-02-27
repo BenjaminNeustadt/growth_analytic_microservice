@@ -8,6 +8,8 @@ puts "Seeding...".colorize(:black).on_green
 end
 puts
 
+# To omit specific events from seeding comment the relevant line
 seed_signup_events
+seed_trial_events
 
 puts "Seeding is complete".light_green
