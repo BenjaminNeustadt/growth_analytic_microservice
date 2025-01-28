@@ -1,4 +1,4 @@
-= Growth Analytic Microservice (Blinkist)
+= Growth Analytic Microservice
 Benjamin b.james.neustadt@gmail.com
 :author: Benjamin
 :copyright: (C) 2022 {author}
